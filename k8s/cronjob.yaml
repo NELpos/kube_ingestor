@@ -1,0 +1,46 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: event-ingestor
+spec:
+  schedule: "*/15 * * * *"  # 15분마다 실행
+  concurrencyPolicy: Forbid  # 이전 작업이 완료되지 않으면 새 작업 시작하지 않음
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: event-ingestor
+            image: ${DOCKER_REGISTRY}/event-ingestor:latest
+            env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: password
+            - name: DB_HOST
+              value: ${DB_HOST}
+            - name: DB_NAME
+              value: ${DB_NAME}
+            - name: DB_PORT
+              value: "5432"
+            - name: API_BASE_URL
+              value: ${API_BASE_URL}
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: api-credentials
+                  key: api-key
+            - name: SLACK_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: slack-credentials
+                  key: bot-token
+            - name: SLACK_CHANNEL
+              value: ${SLACK_CHANNEL}
+          restartPolicy: OnFailure 
